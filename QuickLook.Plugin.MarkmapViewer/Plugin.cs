@@ -22,7 +22,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -32,7 +32,7 @@ public class Plugin : IViewer
 {
     private WebpagePanel? _panel;
 
-    public int Priority => -1;
+    public int Priority => 1;
 
     public void Init()
     {
@@ -40,17 +40,39 @@ public class Plugin : IViewer
 
     public bool CanHandle(string path)
     {
-        return !Directory.Exists(path) && new[] { ".markmap", ".mm", ".mm.md", ".mm.rmd", ".mm.markdown" }.Any(path.ToLower().EndsWith);
+        return !Directory.Exists(path) && new[] { ".markmap", ".mm", ".mm.md", ".mm.mdown", ".mm.rmd", ".mm.markdown" }.Any(path.ToLower().EndsWith);
     }
 
     public void Prepare(string path, ContextObject context)
     {
-        context.PreferredSize = new Size(1000, 600);
+        context.PreferredSize = new Size(1000, 720);
     }
 
     public void View(string path, ContextObject context)
     {
-        _panel = new WebpagePanel(isForceDarkMode: OSThemeHelper.AppsUseDarkTheme());
+        _panel = new WebpagePanel();
+
+        if (OSThemeHelper.AppsUseDarkTheme())
+        {
+            // Invoke using reflection: WebView2.CreationProperties.AdditionalBrowserArguments
+            // This approach allows the library to avoid direct dependency on WebView2
+            if (typeof(WebpagePanel).GetField("_webView", BindingFlags.NonPublic | BindingFlags.Instance) is FieldInfo fieldInfo)
+            {
+                object? webView2 = fieldInfo.GetValue(_panel);
+
+                if (webView2?.GetType().GetProperty("CreationProperties", BindingFlags.Public | BindingFlags.Instance) is PropertyInfo creationPropertiesProperty)
+                {
+                    object? creationProperties = creationPropertiesProperty.GetValue(webView2);
+
+                    if (creationProperties?.GetType().GetProperty("AdditionalBrowserArguments", BindingFlags.Public | BindingFlags.Instance) is PropertyInfo additionalBrowserArgumentsProperty)
+                    {
+                        string additionalBrowserArguments = (additionalBrowserArgumentsProperty.GetValue(creationProperties) as string) ?? string.Empty;
+                        additionalBrowserArgumentsProperty.SetValue(creationProperties, additionalBrowserArguments + " --enable-features=WebContentsForceDark");
+                    }
+                }
+            }
+        }
+
         context.ViewerContent = _panel;
         context.Title = Path.GetFileName(path);
 
