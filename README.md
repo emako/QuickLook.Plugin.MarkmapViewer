@@ -11,6 +11,7 @@ The following file extensions are treated as markmap files.
 - markmap
 - mm
 - mm.md
+- mm.mdown
 - mm.rmd
 - mm.markdown
 
