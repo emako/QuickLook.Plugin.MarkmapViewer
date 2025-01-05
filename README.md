@@ -19,6 +19,10 @@ The following file extensions are treated as markmap files.
 
 - [markmap-cli](https://markmap.js.org/docs/packages--markmap-cli)
 
+## Screen Shot
+
+![image-20250105104842533](./Assets/image-20250105104842533.png)
+
 ## Licenses
 
 ![GPL-v3](https://www.gnu.org/graphics/gplv3-127x51.png)
